@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
+const customersRouter = require('./routes/customers');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +29,9 @@ app.use('/api/auth', authRouter);
 
 // 사용자 API 라우트
 app.use('/api/users', usersRouter);
+
+// 고객 API 라우트
+app.use('/api/customers', customersRouter);
 
 // 서버 시작
 app.listen(PORT, () => {
