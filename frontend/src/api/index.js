@@ -29,6 +29,14 @@ export const authAPI = {
 export const storesAPI = {
   getAll: () => api.get('/stores'),
   getMy: () => api.get('/stores/my'),
+  getDetailedStats: (storeId, startDate, endDate) => {
+    let url = '/orders/store/' + storeId + '/stats/detailed';
+    const params = [];
+    if (startDate) params.push('start_date=' + startDate);
+    if (endDate) params.push('end_date=' + endDate);
+    if (params.length > 0) url += '?' + params.join('&');
+    return api.get(url);
+  },
   getById: (id) => api.get('/stores/' + id),
   create: (data) => api.post('/stores', data),
   update: (id, data) => api.put('/stores/' + id, data),
@@ -89,6 +97,8 @@ export const ordersAPI = {
   updateStatus: (id, status) => api.put('/orders/' + id + '/status', { status }),
   updatePayment: (id, payment_method, payment_status) =>
     api.put('/orders/' + id + '/payment', { payment_method, payment_status }),
+  updateQueue: (id, queue_number, estimated_minutes) => api.put('/orders/' + id + '/queue', { queue_number, estimated_minutes }),
+  getNextQueue: (storeId) => api.get('/orders/store/' + storeId + '/next-queue'),
   delete: (id) => api.delete('/orders/' + id),
 };
 

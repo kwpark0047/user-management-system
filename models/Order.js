@@ -1,6 +1,5 @@
 const db = require('../config/database');
 
-// 주문 테이블 생성
 db.exec(`
   CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,7 +20,6 @@ db.exec(`
   )
 `);
 
-// 주문 상세 테이블 생성
 db.exec(`
   CREATE TABLE IF NOT EXISTS order_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,81 +38,35 @@ db.exec(`
 const Order = {
   generateOrderNumber: (storeId) => {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const count = db.prepare(`
-      SELECT COUNT(*) as count FROM orders
-      WHERE store_id = ? AND date(created_at) = date('now')
-    `).get(storeId).count;
-    return `${today}-${String(count + 1).padStart(4, '0')}`;
+    const count = db.prepare(`SELECT COUNT(*) as count FROM orders WHERE store_id = ? AND date(created_at) = date('now')`).get(storeId).count;
+    return today + '-' + String(count + 1).padStart(4, '0');
   },
 
   findByStoreId: (storeId, status = null, date = null) => {
-    let query = `
-      SELECT o.*, t.name as table_name
-      FROM orders o
-      LEFT JOIN tables t ON o.table_id = t.id
-      WHERE o.store_id = ?
-    `;
+    let query = 'SELECT o.*, t.name as table_name FROM orders o LEFT JOIN tables t ON o.table_id = t.id WHERE o.store_id = ?';
     const params = [storeId];
-
-    if (status) {
-      query += ' AND o.status = ?';
-      params.push(status);
-    }
-    if (date) {
-      query += ' AND date(o.created_at) = ?';
-      params.push(date);
-    }
-
+    if (status) { query += ' AND o.status = ?'; params.push(status); }
+    if (date) { query += ' AND date(o.created_at) = ?'; params.push(date); }
     query += ' ORDER BY o.created_at DESC';
     return db.prepare(query).all(...params);
   },
 
   findById: (id) => {
-    const order = db.prepare(`
-      SELECT o.*, t.name as table_name, s.name as store_name
-      FROM orders o
-      LEFT JOIN tables t ON o.table_id = t.id
-      LEFT JOIN stores s ON o.store_id = s.id
-      WHERE o.id = ?
-    `).get(id);
-
-    if (order) {
-      order.items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(id);
-    }
+    const order = db.prepare('SELECT o.*, t.name as table_name, s.name as store_name FROM orders o LEFT JOIN tables t ON o.table_id = t.id LEFT JOIN stores s ON o.store_id = s.id WHERE o.id = ?').get(id);
+    if (order) { order.items = db.prepare('SELECT * FROM order_items WHERE order_id = ?').all(id); }
     return order;
   },
 
   create: (data) => {
     const { store_id, table_id, customer_name, customer_phone, notes, items } = data;
     const order_number = Order.generateOrderNumber(store_id);
-
-    // 총 금액 계산
-    let total_amount = 0;
-    if (items && items.length > 0) {
-      total_amount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    }
-
-    const stmt = db.prepare(`
-      INSERT INTO orders (store_id, table_id, order_number, customer_name, customer_phone, total_amount, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    const result = stmt.run(store_id, table_id || null, order_number, customer_name || null,
-      customer_phone || null, total_amount, notes || null);
-
+    let total_amount = items && items.length > 0 ? items.reduce((sum, item) => sum + (item.price * item.quantity), 0) : 0;
+    const result = db.prepare('INSERT INTO orders (store_id, table_id, order_number, customer_name, customer_phone, total_amount, notes) VALUES (?, ?, ?, ?, ?, ?, ?)').run(store_id, table_id || null, order_number, customer_name || null, customer_phone || null, total_amount, notes || null);
     const orderId = result.lastInsertRowid;
-
-    // 주문 상세 저장
     if (items && items.length > 0) {
-      const itemStmt = db.prepare(`
-        INSERT INTO order_items (order_id, product_id, product_name, price, quantity, subtotal, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `);
-      for (const item of items) {
-        itemStmt.run(orderId, item.product_id, item.product_name, item.price,
-          item.quantity, item.price * item.quantity, item.notes || null);
-      }
+      const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, product_name, price, quantity, subtotal, notes) VALUES (?, ?, ?, ?, ?, ?, ?)');
+      for (const item of items) { itemStmt.run(orderId, item.product_id, item.product_name, item.price, item.quantity, item.price * item.quantity, item.notes || null); }
     }
-
     return Order.findById(orderId);
   },
 
@@ -124,54 +76,31 @@ const Order = {
   },
 
   updatePayment: (id, payment_method, payment_status) => {
-    db.prepare(`
-      UPDATE orders SET payment_method = ?, payment_status = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(payment_method, payment_status, id);
+    db.prepare('UPDATE orders SET payment_method = ?, payment_status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(payment_method, payment_status, id);
     return Order.findById(id);
   },
 
+  updateQueue: (id, queue_number, estimated_minutes) => {
+    db.prepare('UPDATE orders SET queue_number = ?, estimated_minutes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(queue_number, estimated_minutes, id);
+    return Order.findById(id);
+  },
+
+  getNextQueueNumber: (storeId) => {
+    const result = db.prepare("SELECT COALESCE(MAX(queue_number), 0) + 1 as next_queue FROM orders WHERE store_id = ? AND date(created_at) = date('now') AND status NOT IN ('completed', 'cancelled')").get(storeId);
+    return result.next_queue;
+  },
+
   getStats: (storeId, startDate = null, endDate = null) => {
-    let dateFilter = '';
-    const params = [storeId];
-
-    if (startDate && endDate) {
-      dateFilter = "AND date(created_at) BETWEEN ? AND ?";
-      params.push(startDate, endDate);
-    } else {
-      dateFilter = "AND date(created_at) = date('now')";
-    }
-
-    const totalOrders = db.prepare(`
-      SELECT COUNT(*) as count FROM orders WHERE store_id = ? ${dateFilter}
-    `).get(...params).count;
-
-    const totalSales = db.prepare(`
-      SELECT COALESCE(SUM(total_amount), 0) as total FROM orders
-      WHERE store_id = ? AND payment_status = 'paid' ${dateFilter}
-    `).get(...params).total;
-
-    const statusCounts = db.prepare(`
-      SELECT status, COUNT(*) as count FROM orders
-      WHERE store_id = ? ${dateFilter}
-      GROUP BY status
-    `).all(...params);
-
-    return {
-      total_orders: totalOrders,
-      total_sales: totalSales,
-      by_status: statusCounts.reduce((acc, row) => {
-        acc[row.status] = row.count;
-        return acc;
-      }, {})
-    };
+    let dateFilter = startDate && endDate ? "AND date(created_at) BETWEEN '" + startDate + "' AND '" + endDate + "'" : "AND date(created_at) = date('now')";
+    const totalOrders = db.prepare('SELECT COUNT(*) as count FROM orders WHERE store_id = ? ' + dateFilter).get(storeId).count;
+    const totalSales = db.prepare("SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE store_id = ? AND payment_status = 'paid' " + dateFilter).get(storeId).total;
+    const statusCounts = db.prepare('SELECT status, COUNT(*) as count FROM orders WHERE store_id = ? ' + dateFilter + ' GROUP BY status').all(storeId);
+    return { total_orders: totalOrders, total_sales: totalSales, by_status: statusCounts.reduce((acc, row) => { acc[row.status] = row.count; return acc; }, {}) };
   },
 
   delete: (id) => {
     const order = Order.findById(id);
-    if (order) {
-      db.prepare('DELETE FROM orders WHERE id = ?').run(id);
-    }
+    if (order) { db.prepare('DELETE FROM orders WHERE id = ?').run(id); }
     return order;
   }
 };

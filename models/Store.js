@@ -54,7 +54,7 @@ const Store = {
   },
 
   update: (id, data) => {
-    const { name, description, address, phone, business_type, open_time, close_time, is_active } = data;
+    const { name, description, address, phone, business_type, open_time, close_time, is_active, theme } = data;
     const stmt = db.prepare(`
       UPDATE stores SET
         name = COALESCE(?, name),
@@ -65,10 +65,11 @@ const Store = {
         open_time = COALESCE(?, open_time),
         close_time = COALESCE(?, close_time),
         is_active = COALESCE(?, is_active),
+        theme = COALESCE(?, theme),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
-    stmt.run(name, description, address, phone, business_type, open_time, close_time, is_active, id);
+    stmt.run(name, description, address, phone, business_type, open_time, close_time, is_active, theme, id);
     return Store.findById(id);
   },
 
