@@ -17,7 +17,7 @@ const Login = () => {
 
     try {
       await login(form.email, form.password);
-      navigate('/');
+      navigate('/admin');
     } catch (err) {
       setError(err.response?.data?.error || '로그인 실패');
     } finally {

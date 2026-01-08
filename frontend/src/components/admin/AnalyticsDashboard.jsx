@@ -80,6 +80,8 @@ const AnalyticsDashboard = () => {
     return new Intl.NumberFormat('ko-KR').format(price) + '원';
   };
 
+  const getGrowthBarWidth = (value) => Math.min(Math.abs(value || 0), 100);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -97,6 +99,8 @@ const AnalyticsDashboard = () => {
   }
 
   const maxSales = salesData?.data ? Math.max(...salesData.data.map(d => d.sales), 1) : 1;
+  const salesGrowthPositive = comparison?.growth?.sales >= 0;
+  const ordersGrowthPositive = comparison?.growth?.orders >= 0;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -116,7 +120,6 @@ const AnalyticsDashboard = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* 기간 선택 */}
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
@@ -127,7 +130,6 @@ const AnalyticsDashboard = () => {
             <option value="90">최근 90일</option>
           </select>
 
-          {/* 분석 단위 */}
           <div className="flex bg-gray-100 rounded-lg p-1">
             {['daily', 'weekly', 'monthly'].map((p) => (
               <button
@@ -168,8 +170,8 @@ const AnalyticsDashboard = () => {
 
         <div className="bg-white rounded-2xl shadow-soft p-5">
           <div className="flex items-center gap-3 mb-2">
-            <div className={`p-2 rounded-full ${comparison?.growth?.sales >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-              {comparison?.growth?.sales >= 0 ? (
+            <div className={`p-2 rounded-full ${salesGrowthPositive ? 'bg-green-100' : 'bg-red-100'}`}>
+              {salesGrowthPositive ? (
                 <TrendingUp className="w-5 h-5 text-green-600" />
               ) : (
                 <TrendingDown className="w-5 h-5 text-red-600" />
@@ -177,8 +179,8 @@ const AnalyticsDashboard = () => {
             </div>
             <span className="text-sm text-gray-500">전기간 대비</span>
           </div>
-          <p className={`text-2xl font-bold ${comparison?.growth?.sales >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {comparison?.growth?.sales >= 0 ? '+' : ''}{comparison?.growth?.sales || 0}%
+          <p className={`text-2xl font-bold ${salesGrowthPositive ? 'text-green-600' : 'text-red-600'}`}>
+            {salesGrowthPositive ? '+' : ''}{comparison?.growth?.sales || 0}%
           </p>
         </div>
 
@@ -193,6 +195,94 @@ const AnalyticsDashboard = () => {
         </div>
       </div>
 
+      {/* 기간 비교 차트 */}
+      {comparison && (
+        <div className="bg-white rounded-2xl shadow-soft p-6 mb-6">
+          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-blue-500" />
+            {period === 'monthly' ? '월간' : '주간'} 비교
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-5 border-2 border-primary-200">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-primary-700">
+                  {period === 'monthly' ? '이번 달' : '이번 주'}
+                </span>
+                <span className="text-xs text-primary-500">
+                  {comparison.current?.start} ~ {comparison.current?.end}
+                </span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">매출</span>
+                  <span className="text-xl font-bold text-primary-700">
+                    {formatFullPrice(comparison.current?.sales || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">주문</span>
+                  <span className="text-lg font-semibold text-primary-600">
+                    {comparison.current?.orders || 0}건
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-600">
+                  {period === 'monthly' ? '지난 달' : '지난 주'}
+                </span>
+                <span className="text-xs text-gray-400">
+                  {comparison.previous?.start} ~ {comparison.previous?.end}
+                </span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">매출</span>
+                  <span className="text-xl font-bold text-gray-700">
+                    {formatFullPrice(comparison.previous?.sales || 0)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500">주문</span>
+                  <span className="text-lg font-semibold text-gray-600">
+                    {comparison.previous?.orders || 0}건
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-600">매출 성장률</span>
+              <span className={`text-lg font-bold ${salesGrowthPositive ? 'text-green-600' : 'text-red-600'}`}>
+                {salesGrowthPositive ? '+' : ''}{comparison.growth?.sales?.toFixed(1) || 0}%
+              </span>
+            </div>
+            <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${salesGrowthPositive ? 'bg-gradient-to-r from-green-400 to-green-600' : 'bg-gradient-to-r from-red-400 to-red-600'}`}
+                style={{ width: getGrowthBarWidth(comparison.growth?.sales) + '%' }}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-3 mb-2">
+              <span className="text-sm text-gray-600">주문 성장률</span>
+              <span className={`text-lg font-bold ${ordersGrowthPositive ? 'text-green-600' : 'text-red-600'}`}>
+                {ordersGrowthPositive ? '+' : ''}{comparison.growth?.orders?.toFixed(1) || 0}%
+              </span>
+            </div>
+            <div className="h-4 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${ordersGrowthPositive ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 'bg-gradient-to-r from-red-400 to-red-600'}`}
+                style={{ width: getGrowthBarWidth(comparison.growth?.orders) + '%' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 매출 차트 */}
       <div className="bg-white rounded-2xl shadow-soft p-6 mb-6">
         <h2 className="text-lg font-bold mb-4">매출 추이</h2>
@@ -204,7 +294,7 @@ const AnalyticsDashboard = () => {
                 <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-full transition-all duration-500"
-                    style={{ width: `${(item.sales / maxSales) * 100}%` }}
+                    style={{ width: (item.sales / maxSales * 100) + '%' }}
                   />
                 </div>
                 <span className="w-24 text-sm font-medium text-right">{formatFullPrice(item.sales)}</span>
@@ -219,7 +309,6 @@ const AnalyticsDashboard = () => {
 
       {/* 하단 그리드 */}
       <div className="grid md:grid-cols-2 gap-6">
-        {/* 인기 메뉴 */}
         <div className="bg-white rounded-2xl shadow-soft p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold flex items-center gap-2">
@@ -262,7 +351,6 @@ const AnalyticsDashboard = () => {
           )}
         </div>
 
-        {/* 직원 성과 */}
         <div className="bg-white rounded-2xl shadow-soft p-6">
           <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
             <Users className="w-5 h-5 text-purple-500" />
@@ -301,7 +389,6 @@ const AnalyticsDashboard = () => {
         </div>
       </div>
 
-      {/* 최고 매출일 */}
       {salesData?.summary?.best_day && (
         <div className="mt-6 bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl p-6 text-white">
           <div className="flex items-center justify-between">
