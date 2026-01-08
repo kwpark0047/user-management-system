@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { categoriesAPI, productsAPI, storesAPI } from '../../api';
-import { ArrowLeft, Plus, Edit, Trash2, FolderPlus } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, FolderPlus, Clock } from 'lucide-react';
 
 const MenuManager = () => {
   const { storeId } = useParams();
@@ -159,6 +159,7 @@ const MenuManager = () => {
                       </div>
                       <p className="text-sm text-gray-500">{product.category_name || '미분류'}</p>
                       <p className="text-blue-600 font-medium">{formatPrice(product.price)}</p>
+                      {product.cooking_time && <p className="text-xs text-gray-400 flex items-center gap-1"><Clock size={12} /> {product.cooking_time}분</p>}
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -260,6 +261,7 @@ const ProductModal = ({ storeId, categories, product, onClose, onSave }) => {
     description: product?.description || '',
     image_url: product?.image_url || '',
     is_sold_out: product?.is_sold_out || 0,
+    cooking_time: product?.cooking_time || 5,
   });
   const [loading, setLoading] = useState(false);
 
@@ -272,6 +274,7 @@ const ProductModal = ({ storeId, categories, product, onClose, onSave }) => {
         store_id: parseInt(storeId),
         category_id: form.category_id ? parseInt(form.category_id) : null,
         price: parseInt(form.price) || 0,
+        cooking_time: parseInt(form.cooking_time) || 5,
       };
       if (product) {
         await productsAPI.update(product.id, data);
@@ -316,6 +319,18 @@ const ProductModal = ({ storeId, categories, product, onClose, onSave }) => {
             placeholder="가격 (원)"
             className="w-full px-3 py-2 border rounded-lg"
           />
+          <div className="flex items-center gap-2">
+            <Clock size={18} className="text-gray-400" />
+            <input
+              type="number"
+              value={form.cooking_time}
+              onChange={(e) => setForm({ ...form, cooking_time: e.target.value })}
+              placeholder="조리시간 (분)"
+              min="1"
+              className="flex-1 px-3 py-2 border rounded-lg"
+            />
+            <span className="text-gray-500 text-sm">분</span>
+          </div>
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}

@@ -60,8 +60,25 @@ const Order = {
   create: (data) => {
     const { store_id, table_id, customer_name, customer_phone, notes, items } = data;
     const order_number = Order.generateOrderNumber(store_id);
-    let total_amount = items && items.length > 0 ? items.reduce((sum, item) => sum + (item.price * item.quantity), 0) : 0;
-    const result = db.prepare('INSERT INTO orders (store_id, table_id, order_number, customer_name, customer_phone, total_amount, notes) VALUES (?, ?, ?, ?, ?, ?, ?)').run(store_id, table_id || null, order_number, customer_name || null, customer_phone || null, total_amount, notes || null);
+    let total_amount = 0;
+    let estimated_minutes = 0;
+    
+    // 조리시간 계산: 각 상품의 조리시간 조회하여 최대값 사용 (동시 조리)
+    if (items && items.length > 0) {
+      total_amount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const productIds = items.map(i => i.product_id);
+      const products = db.prepare(`SELECT id, cooking_time FROM products WHERE id IN (${productIds.join(',')})`).all();
+      const cookingTimeMap = {};
+      products.forEach(p => { cookingTimeMap[p.id] = p.cooking_time; });
+      // 최대 조리시간 계산 (동시 조리 가정, 0이면 예상시간 미제공)
+      const cookingTimes = items.map(item => cookingTimeMap[item.product_id] ?? 5).filter(t => t > 0);
+      estimated_minutes = cookingTimes.length > 0 ? Math.max(...cookingTimes) : null;
+    }
+    
+    // 대기순번 자동 할당
+    const queue_number = Order.getNextQueueNumber(store_id);
+    
+    const result = db.prepare('INSERT INTO orders (store_id, table_id, order_number, customer_name, customer_phone, total_amount, notes, queue_number, estimated_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(store_id, table_id || null, order_number, customer_name || null, customer_phone || null, total_amount, notes || null, queue_number, estimated_minutes);
     const orderId = result.lastInsertRowid;
     if (items && items.length > 0) {
       const itemStmt = db.prepare('INSERT INTO order_items (order_id, product_id, product_name, price, quantity, subtotal, notes) VALUES (?, ?, ?, ?, ?, ?, ?)');

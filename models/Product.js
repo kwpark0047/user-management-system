@@ -10,6 +10,7 @@ db.exec(`
     description TEXT,
     price INTEGER NOT NULL DEFAULT 0,
     image_url TEXT,
+    cooking_time INTEGER DEFAULT 5,
     is_sold_out INTEGER DEFAULT 0,
     is_active INTEGER DEFAULT 1,
     sort_order INTEGER DEFAULT 0,
@@ -19,6 +20,13 @@ db.exec(`
     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
   )
 `);
+
+// cooking_time 컬럼 추가 (기존 테이블 마이그레이션)
+try {
+  db.exec(`ALTER TABLE products ADD COLUMN cooking_time INTEGER DEFAULT 5`);
+} catch (e) {
+  // 이미 컬럼이 존재하면 무시
+}
 
 const Product = {
   findByStoreId: (storeId, categoryId = null) => {
@@ -50,18 +58,18 @@ const Product = {
   },
 
   create: (data) => {
-    const { store_id, category_id, name, description, price, image_url, sort_order } = data;
+    const { store_id, category_id, name, description, price, image_url, cooking_time, sort_order } = data;
     const stmt = db.prepare(`
-      INSERT INTO products (store_id, category_id, name, description, price, image_url, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO products (store_id, category_id, name, description, price, image_url, cooking_time, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const result = stmt.run(store_id, category_id || null, name, description || null,
-      price || 0, image_url || null, sort_order || 0);
+      price || 0, image_url || null, cooking_time || 5, sort_order || 0);
     return Product.findById(result.lastInsertRowid);
   },
 
   update: (id, data) => {
-    const { category_id, name, description, price, image_url, is_sold_out, is_active, sort_order } = data;
+    const { category_id, name, description, price, image_url, cooking_time, is_sold_out, is_active, sort_order } = data;
     const stmt = db.prepare(`
       UPDATE products SET
         category_id = COALESCE(?, category_id),
@@ -69,13 +77,14 @@ const Product = {
         description = COALESCE(?, description),
         price = COALESCE(?, price),
         image_url = COALESCE(?, image_url),
+        cooking_time = COALESCE(?, cooking_time),
         is_sold_out = COALESCE(?, is_sold_out),
         is_active = COALESCE(?, is_active),
         sort_order = COALESCE(?, sort_order),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
-    stmt.run(category_id, name, description, price, image_url, is_sold_out, is_active, sort_order, id);
+    stmt.run(category_id, name, description, price, image_url, cooking_time, is_sold_out, is_active, sort_order, id);
     return Product.findById(id);
   },
 

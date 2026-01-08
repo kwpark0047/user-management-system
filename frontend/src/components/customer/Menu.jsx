@@ -99,23 +99,23 @@ const Menu = () => {
   if (loading) return (<div className="min-h-screen flex items-center justify-center" style={{ background: loadingBg }}><div className="text-center"><div className="relative w-16 h-16 mx-auto"><div className="absolute inset-0 rounded-full border-4" style={{ borderColor: theme.primaryColor + "40" }} /><div className="absolute inset-0 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: theme.primaryColor, borderTopColor: "transparent" }} /></div><p className="mt-6 font-medium" style={{ color: theme.textColor }}>메뉴를 불러오는 중...</p></div></div>);
   if (error) return (<div className="min-h-screen flex items-center justify-center" style={{ background: theme.backgroundColor }}><p className="text-red-500 text-xl">{error}</p></div>);
 
+  // Poll for order updates
+  useEffect(() => {
+    if (!orderSuccess?.id) return;
+    const pollOrder = async () => {
+      try {
+        const res = await ordersAPI.getById(orderSuccess.id);
+        if (res.data.queue_number !== orderSuccess.queue_number || res.data.estimated_minutes !== orderSuccess.estimated_minutes || res.data.status !== orderSuccess.status) {
+          setOrderSuccess(prev => ({ ...prev, ...res.data }));
+        }
+      } catch (e) {}
+    };
+    const interval = setInterval(pollOrder, 5000);
+    return () => clearInterval(interval);
+  }, [orderSuccess?.id, orderSuccess?.queue_number, orderSuccess?.estimated_minutes, orderSuccess?.status]);
+
   if (orderSuccess) {
     const pInfo = paymentMethods.find(p => p.id === orderSuccess.payment_method);
-    
-    // Poll for order updates
-    useEffect(() => {
-      if (!orderSuccess?.id) return;
-      const pollOrder = async () => {
-        try {
-          const res = await ordersAPI.getById(orderSuccess.id);
-          if (res.data.queue_number !== orderSuccess.queue_number || res.data.estimated_minutes !== orderSuccess.estimated_minutes || res.data.status !== orderSuccess.status) {
-            setOrderSuccess(prev => ({ ...prev, ...res.data }));
-          }
-        } catch (e) {}
-      };
-      const interval = setInterval(pollOrder, 5000);
-      return () => clearInterval(interval);
-    }, [orderSuccess?.id]);
 
     return (<div className="min-h-screen flex items-center justify-center p-4" style={{ background: theme.backgroundColor, ...themeStyles }}><div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full"><div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: theme.accentColor + "20" }}><CheckCircle size={40} style={{ color: theme.accentColor }} /></div><h2 className="text-2xl font-bold text-center mb-2" style={{ color: theme.textColor }}>주문 완료!</h2><p className="text-center text-gray-500 mb-6">주문이 성공적으로 접수되었습니다</p>
       
