@@ -74,6 +74,17 @@ export const tablesAPI = {
   delete: (id) => api.delete('/tables/' + id),
 };
 
+// Staff API
+export const staffAPI = {
+  getByStore: (storeId) => api.get('/staff/store/' + storeId),
+  create: (storeId, data) => api.post('/staff/store/' + storeId, data),
+  updateRole: (id, role) => api.put('/staff/' + id, { role }),
+  delete: (id) => api.delete('/staff/' + id),
+  getMyStores: () => api.get('/staff/my-stores'),
+  getMyRole: (storeId) => api.get('/staff/my-role/' + storeId),
+  getRoles: () => api.get('/staff/roles'),
+};
+
 // Orders API
 export const ordersAPI = {
   getByStore: (storeId, status, date) => {

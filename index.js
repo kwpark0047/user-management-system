@@ -12,6 +12,7 @@ const categoriesRouter = require('./routes/categories');
 const productsRouter = require('./routes/products');
 const tablesRouter = require('./routes/tables');
 const ordersRouter = require('./routes/orders');
+const staffRouter = require('./routes/staff');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +41,7 @@ app.use('/api/categories', categoriesRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/tables', tablesRouter);
 app.use('/api/orders', ordersRouter);
+app.use('/api/staff', staffRouter);
 
 // 서버 시작
 app.listen(PORT, () => {

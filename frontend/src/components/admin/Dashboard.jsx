@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { storesAPI, ordersAPI } from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { Store, ShoppingBag, DollarSign, Clock, Plus, ChevronRight, BarChart3 } from 'lucide-react';
+import { Store, ShoppingBag, DollarSign, Clock, Plus, ChevronRight, BarChart3, Users } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -152,7 +152,7 @@ const Dashboard = () => {
       </div>
 
       {/* 퀵 메뉴 */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
         <Link
           to={'/admin/stores/' + selectedStore?.id + '/menu'}
           className="bg-white rounded-2xl shadow-soft p-4 card-hover hover:shadow-md transition flex items-center justify-between"
@@ -179,6 +179,13 @@ const Dashboard = () => {
           className="bg-white rounded-2xl shadow-soft p-4 card-hover hover:shadow-md transition flex items-center justify-between"
         >
           <span className="font-medium">매장 설정</span>
+          <ChevronRight size={20} className="text-navy-400" />
+        </Link>
+        <Link
+          to={'/admin/stores/' + selectedStore?.id + '/staff'}
+          className="bg-white rounded-2xl shadow-soft p-4 card-hover hover:shadow-md transition flex items-center justify-between"
+        >
+          <span className="font-medium flex items-center gap-2"><Users size={18} className="text-purple-500" />직원 관리</span>
           <ChevronRight size={20} className="text-navy-400" />
         </Link>
         <Link
