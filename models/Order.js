@@ -15,10 +15,19 @@ db.exec(`
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    processed_by INTEGER,
     FOREIGN KEY (store_id) REFERENCES stores(id),
-    FOREIGN KEY (table_id) REFERENCES tables(id)
+    FOREIGN KEY (table_id) REFERENCES tables(id),
+    FOREIGN KEY (processed_by) REFERENCES users(id)
   )
 `);
+
+// processed_by 컬럼 추가 (기존 테이블용)
+try {
+  db.exec(`ALTER TABLE orders ADD COLUMN processed_by INTEGER REFERENCES users(id)`);
+} catch (e) {
+  // 이미 컬럼이 존재하면 무시
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS order_items (
@@ -62,22 +71,19 @@ const Order = {
     const order_number = Order.generateOrderNumber(store_id);
     let total_amount = 0;
     let estimated_minutes = 0;
-    
-    // 조리시간 계산: 각 상품의 조리시간 조회하여 최대값 사용 (동시 조리)
+
     if (items && items.length > 0) {
       total_amount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const productIds = items.map(i => i.product_id);
       const products = db.prepare(`SELECT id, cooking_time FROM products WHERE id IN (${productIds.join(',')})`).all();
       const cookingTimeMap = {};
       products.forEach(p => { cookingTimeMap[p.id] = p.cooking_time; });
-      // 최대 조리시간 계산 (동시 조리 가정, 0이면 예상시간 미제공)
       const cookingTimes = items.map(item => cookingTimeMap[item.product_id] ?? 5).filter(t => t > 0);
       estimated_minutes = cookingTimes.length > 0 ? Math.max(...cookingTimes) : null;
     }
-    
-    // 대기순번 자동 할당
+
     const queue_number = Order.getNextQueueNumber(store_id);
-    
+
     const result = db.prepare('INSERT INTO orders (store_id, table_id, order_number, customer_name, customer_phone, total_amount, notes, queue_number, estimated_minutes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(store_id, table_id || null, order_number, customer_name || null, customer_phone || null, total_amount, notes || null, queue_number, estimated_minutes);
     const orderId = result.lastInsertRowid;
     if (items && items.length > 0) {
@@ -87,8 +93,12 @@ const Order = {
     return Order.findById(orderId);
   },
 
-  updateStatus: (id, status) => {
-    db.prepare('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, id);
+  updateStatus: (id, status, processedBy = null) => {
+    if (processedBy) {
+      db.prepare('UPDATE orders SET status = ?, processed_by = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, processedBy, id);
+    } else {
+      db.prepare('UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(status, id);
+    }
     return Order.findById(id);
   },
 

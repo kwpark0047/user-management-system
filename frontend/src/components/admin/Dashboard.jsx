@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { storesAPI, ordersAPI } from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import { Store, ShoppingBag, DollarSign, Clock, Plus, ChevronRight, BarChart3, Users } from 'lucide-react';
+import { Store, ShoppingBag, DollarSign, Clock, Plus, ChevronRight, BarChart3, Users, TrendingUp } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -195,6 +195,15 @@ const Dashboard = () => {
           <span className="font-medium flex items-center gap-2"><BarChart3 size={18} className="text-primary-500" />매출 통계</span>
           <ChevronRight size={20} className="text-navy-400" />
         </Link>
+        {selectedStore?.role === 'owner' && (
+          <Link
+            to={'/admin/stores/' + selectedStore?.id + '/analytics'}
+            className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-2xl shadow-soft p-4 card-hover hover:shadow-md transition flex items-center justify-between text-white"
+          >
+            <span className="font-medium flex items-center gap-2"><TrendingUp size={18} />분석 대시보드</span>
+            <ChevronRight size={20} className="opacity-70" />
+          </Link>
+        )}
       </div>
 
       {/* 최근 주문 */}

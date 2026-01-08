@@ -17,6 +17,7 @@ import TableManager from './components/admin/TableManager';
 import OrderManager from './components/admin/OrderManager';
 import SalesStats from './components/admin/SalesStats';
 import StaffManager from './components/admin/StaffManager';
+import AnalyticsDashboard from './components/admin/AnalyticsDashboard';
 
 // Customer
 import Menu from './components/customer/Menu';
@@ -55,6 +56,7 @@ function App() {
           <Route path="/admin/stores/:storeId/orders" element={<AdminLayout><OrderManager /></AdminLayout>} />
           <Route path="/admin/stores/:storeId/stats" element={<AdminLayout><SalesStats /></AdminLayout>} />
           <Route path="/admin/stores/:storeId/staff" element={<AdminLayout><StaffManager /></AdminLayout>} />
+          <Route path="/admin/stores/:storeId/analytics" element={<AdminLayout><AnalyticsDashboard /></AdminLayout>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

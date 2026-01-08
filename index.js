@@ -13,6 +13,7 @@ const productsRouter = require('./routes/products');
 const tablesRouter = require('./routes/tables');
 const ordersRouter = require('./routes/orders');
 const staffRouter = require('./routes/staff');
+const analyticsRouter = require('./routes/analytics');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -42,6 +43,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/tables', tablesRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/staff', staffRouter);
+app.use('/api/analytics', analyticsRouter);
 
 // 서버 시작
 app.listen(PORT, () => {

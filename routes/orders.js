@@ -3,6 +3,7 @@ const router = express.Router();
 const Order = require('../models/Order');
 const Store = require('../models/Store');
 const Table = require('../models/Table');
+const OrderLog = require('../models/OrderLog');
 const authMiddleware = require('../middleware/auth');
 const { checkStorePermission, getStoreRole } = require('../middleware/storeAuth');
 
@@ -93,7 +94,10 @@ router.put('/:id/status', authMiddleware, (req, res) => {
     if (role === 'kitchen') return res.status(403).json({ error: '주방 역할은 주문 상태를 변경할 수 없습니다' });
     const { status } = req.body;
     if (!['pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled'].includes(status)) return res.status(400).json({ error: '유효하지 않은 상태입니다' });
-    const updated = Order.updateStatus(req.params.id, status);
+    const oldStatus = order.status;
+    const updated = Order.updateStatus(req.params.id, status, req.user.id);
+    // 상태 변경 로그 저장
+    OrderLog.create(order.id, req.user.id, oldStatus, status);
     res.json(updated);
   } catch (error) {
     res.status(400).json({ error: error.message });

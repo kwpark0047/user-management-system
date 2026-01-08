@@ -113,4 +113,39 @@ export const ordersAPI = {
   delete: (id) => api.delete('/orders/' + id),
 };
 
+
+// Analytics API (대표 전용)
+export const analyticsAPI = {
+  getSales: (storeId, period, start, end) => {
+    let url = '/analytics/' + storeId + '/sales?period=' + period;
+    if (start) url += '&start=' + start;
+    if (end) url += '&end=' + end;
+    return api.get(url);
+  },
+  getComparison: (storeId, period) => api.get('/analytics/' + storeId + '/comparison?period=' + period),
+  getProducts: (storeId, start, end, limit, sort) => {
+    let url = '/analytics/' + storeId + '/products?limit=' + (limit || 10);
+    if (start) url += '&start=' + start;
+    if (end) url += '&end=' + end;
+    if (sort) url += '&sort=' + sort;
+    return api.get(url);
+  },
+  getStaff: (storeId, start, end) => {
+    let url = '/analytics/' + storeId + '/staff';
+    const params = [];
+    if (start) params.push('start=' + start);
+    if (end) params.push('end=' + end);
+    if (params.length > 0) url += '?' + params.join('&');
+    return api.get(url);
+  },
+  getHourly: (storeId, start, end) => {
+    let url = '/analytics/' + storeId + '/hourly';
+    const params = [];
+    if (start) params.push('start=' + start);
+    if (end) params.push('end=' + end);
+    if (params.length > 0) url += '?' + params.join('&');
+    return api.get(url);
+  }
+};
+
 export default api;

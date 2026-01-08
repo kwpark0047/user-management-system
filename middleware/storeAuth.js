@@ -36,7 +36,10 @@ const REQUIRED_PERMISSIONS = {
   'order:write': ['owner', 'admin', 'manager', 'staff'],
 
   // 통계
-  'stats:read': ['owner', 'admin', 'manager']
+  'stats:read': ['owner', 'admin', 'manager'],
+
+  // 분석 대시보드 (대표 전용)
+  'analytics:read': ['owner']
 };
 
 // 역할 한글명
