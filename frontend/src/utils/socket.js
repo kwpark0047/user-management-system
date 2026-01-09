@@ -1,0 +1,46 @@
+import { io } from 'socket.io-client';
+
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
+
+const socket = io(SOCKET_URL, {
+  autoConnect: false,
+  withCredentials: true,
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000
+});
+
+// 소켓 연결
+export const connectSocket = (storeId, userId, role) => {
+  if (!socket.connected) {
+    socket.connect();
+  }
+  socket.emit('join-store', { storeId, userId, role });
+};
+
+// 소켓 연결 해제
+export const disconnectSocket = () => {
+  socket.disconnect();
+};
+
+// 알림 이벤트 리스너 등록
+export const onNotification = (callback) => {
+  socket.on('notification', callback);
+  return () => socket.off('notification', callback);
+};
+
+// 연결 상태 이벤트
+export const onConnect = (callback) => {
+  socket.on('connect', callback);
+  return () => socket.off('connect', callback);
+};
+
+export const onDisconnect = (callback) => {
+  socket.on('disconnect', callback);
+  return () => socket.off('disconnect', callback);
+};
+
+// 연결 상태 확인
+export const isConnected = () => socket.connected;
+
+export default socket;

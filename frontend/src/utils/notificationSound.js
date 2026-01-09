@@ -72,6 +72,21 @@ class NotificationSound {
     this.playTone(783.99, now + 0.1, 0.15, 'sine');
   }
 
+  // 주문 준비 완료 알림음 (특별한 소리)
+  playOrderReady() {
+    if (!this.enabled) return;
+    this.init();
+
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // 상승하는 멜로디
+    this.playTone(523.25, now, 0.15, 'sine');        // C5
+    this.playTone(659.25, now + 0.15, 0.15, 'sine'); // E5
+    this.playTone(783.99, now + 0.3, 0.15, 'sine');  // G5
+    this.playTone(1046.5, now + 0.45, 0.3, 'sine');  // C6
+  }
+
   playTone(frequency, startTime, duration, type = 'sine') {
     const ctx = this.audioContext;
 
@@ -111,5 +126,22 @@ class NotificationSound {
 
 // 싱글톤 인스턴스
 const notificationSound = new NotificationSound();
+
+// 진동 유틸리티
+export function vibrateNotification(pattern = [200, 100, 200]) {
+  if ('vibrate' in navigator) {
+    navigator.vibrate(pattern);
+  }
+}
+
+// 짧은 진동
+export function vibrateShort() {
+  vibrateNotification([100]);
+}
+
+// 긴 진동 (주문 준비 완료용)
+export function vibrateOrderReady() {
+  vibrateNotification([200, 100, 200, 100, 300]);
+}
 
 export default notificationSound;

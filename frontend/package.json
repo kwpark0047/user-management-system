@@ -7,16 +7,22 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "toss:dev": "granite dev",
+    "toss:build": "granite build",
+    "toss:deploy": "ait deploy"
   },
   "dependencies": {
+    "@apps-in-toss/web-bridge": "^1.7.1",
+    "@apps-in-toss/web-framework": "^1.7.1",
     "@tailwindcss/postcss": "^4.1.18",
     "axios": "^1.13.2",
     "jspdf": "^4.0.0",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.11.0"
+    "react-router-dom": "^7.11.0",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
