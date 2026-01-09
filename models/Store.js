@@ -13,11 +13,15 @@ db.exec(`
     open_time TEXT DEFAULT '09:00',
     close_time TEXT DEFAULT '22:00',
     is_active INTEGER DEFAULT 1,
+    theme TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (owner_id) REFERENCES users(id)
   )
 `);
+
+// 기존 테이블용 theme 컬럼 추가
+try { db.exec(`ALTER TABLE stores ADD COLUMN theme TEXT`); } catch (e) {}
 
 const Store = {
   findAll: () => {

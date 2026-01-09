@@ -4,8 +4,10 @@ const Order = require('../models/Order');
 const Store = require('../models/Store');
 const Table = require('../models/Table');
 const OrderLog = require('../models/OrderLog');
+const TableAssignment = require('../models/TableAssignment');
 const authMiddleware = require('../middleware/auth');
 const { checkStorePermission, getStoreRole } = require('../middleware/storeAuth');
+const { sendOrderReadyNotification, sendNewOrderNotification, sendOrderStatusNotification } = require('../utils/notifications');
 
 // 매장별 주문 조회 (order:read 권한)
 router.get('/store/:storeId', authMiddleware, checkStorePermission('order:read'), (req, res) => {
@@ -78,6 +80,13 @@ router.post('/', (req, res) => {
       if (!table || table.store_id !== parseInt(store_id)) return res.status(400).json({ error: '유효하지 않은 테이블입니다' });
     }
     const order = Order.create(req.body);
+
+    // 새 주문 알림 발송
+    const io = req.app.get('io');
+    if (io) {
+      sendNewOrderNotification(io, order);
+    }
+
     res.status(201).json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -97,7 +106,21 @@ router.put('/:id/status', authMiddleware, (req, res) => {
     const oldStatus = order.status;
     const updated = Order.updateStatus(req.params.id, status, req.user.id);
     // 상태 변경 로그 저장
-    OrderLog.create(order.id, req.user.id, oldStatus, status);
+    OrderLog.create(updated.id, req.user.id, oldStatus, status);
+
+    // 알림 발송
+    const io = req.app.get('io');
+    if (io) {
+      // 모든 상태 변경에 대해 고객에게 알림
+      sendOrderStatusNotification(io, updated, oldStatus, status);
+
+      // 준비완료 상태일 때 특별 알림
+      if (status === 'ready') {
+        const assignment = order.table_id ? TableAssignment.getByTable(order.store_id, order.table_id) : null;
+        sendOrderReadyNotification(io, updated, assignment);
+      }
+    }
+
     res.json(updated);
   } catch (error) {
     res.status(400).json({ error: error.message });

@@ -16,18 +16,18 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     processed_by INTEGER,
+    queue_number INTEGER,
+    estimated_minutes INTEGER,
     FOREIGN KEY (store_id) REFERENCES stores(id),
     FOREIGN KEY (table_id) REFERENCES tables(id),
     FOREIGN KEY (processed_by) REFERENCES users(id)
   )
 `);
 
-// processed_by 컬럼 추가 (기존 테이블용)
-try {
-  db.exec(`ALTER TABLE orders ADD COLUMN processed_by INTEGER REFERENCES users(id)`);
-} catch (e) {
-  // 이미 컬럼이 존재하면 무시
-}
+// 기존 테이블용 컬럼 추가
+try { db.exec(`ALTER TABLE orders ADD COLUMN processed_by INTEGER REFERENCES users(id)`); } catch (e) {}
+try { db.exec(`ALTER TABLE orders ADD COLUMN queue_number INTEGER`); } catch (e) {}
+try { db.exec(`ALTER TABLE orders ADD COLUMN estimated_minutes INTEGER`); } catch (e) {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS order_items (
@@ -75,7 +75,9 @@ const Order = {
     if (items && items.length > 0) {
       total_amount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const productIds = items.map(i => i.product_id);
-      const products = db.prepare(`SELECT id, cooking_time FROM products WHERE id IN (${productIds.join(',')})`).all();
+      // SQL 주입 방지: 매개변수화된 쿼리 사용
+      const placeholders = productIds.map(() => '?').join(',');
+      const products = db.prepare(`SELECT id, cooking_time FROM products WHERE id IN (${placeholders})`).all(...productIds);
       const cookingTimeMap = {};
       products.forEach(p => { cookingTimeMap[p.id] = p.cooking_time; });
       const cookingTimes = items.map(item => cookingTimeMap[item.product_id] ?? 5).filter(t => t > 0);
@@ -118,10 +120,18 @@ const Order = {
   },
 
   getStats: (storeId, startDate = null, endDate = null) => {
-    let dateFilter = startDate && endDate ? "AND date(created_at) BETWEEN '" + startDate + "' AND '" + endDate + "'" : "AND date(created_at) = date('now')";
-    const totalOrders = db.prepare('SELECT COUNT(*) as count FROM orders WHERE store_id = ? ' + dateFilter).get(storeId).count;
-    const totalSales = db.prepare("SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE store_id = ? AND payment_status = 'paid' " + dateFilter).get(storeId).total;
-    const statusCounts = db.prepare('SELECT status, COUNT(*) as count FROM orders WHERE store_id = ? ' + dateFilter + ' GROUP BY status').all(storeId);
+    // SQL 주입 방지: 매개변수화된 쿼리 사용
+    const params = [storeId];
+    let dateFilter = '';
+    if (startDate && endDate) {
+      dateFilter = 'AND date(created_at) BETWEEN ? AND ?';
+      params.push(startDate, endDate);
+    } else {
+      dateFilter = "AND date(created_at) = date('now')";
+    }
+    const totalOrders = db.prepare(`SELECT COUNT(*) as count FROM orders WHERE store_id = ? ${dateFilter}`).get(...params).count;
+    const totalSales = db.prepare(`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE store_id = ? AND payment_status = 'paid' ${dateFilter}`).get(...params).total;
+    const statusCounts = db.prepare(`SELECT status, COUNT(*) as count FROM orders WHERE store_id = ? ${dateFilter} GROUP BY status`).all(...params);
     return { total_orders: totalOrders, total_sales: totalSales, by_status: statusCounts.reduce((acc, row) => { acc[row.status] = row.count; return acc; }, {}) };
   },
 
