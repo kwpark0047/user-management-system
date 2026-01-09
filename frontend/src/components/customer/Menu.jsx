@@ -49,6 +49,21 @@ const Menu = () => {
     else if (storeIdParam) fetchStoreData(storeIdParam);
   }, [qrCode, storeIdParam]);
 
+  // Poll for order updates
+  useEffect(() => {
+    if (!orderSuccess?.id) return;
+    const pollOrder = async () => {
+      try {
+        const res = await ordersAPI.getById(orderSuccess.id);
+        if (res.data.queue_number !== orderSuccess.queue_number || res.data.estimated_minutes !== orderSuccess.estimated_minutes || res.data.status !== orderSuccess.status) {
+          setOrderSuccess(prev => ({ ...prev, ...res.data }));
+        }
+      } catch (e) {}
+    };
+    const interval = setInterval(pollOrder, 5000);
+    return () => clearInterval(interval);
+  }, [orderSuccess?.id, orderSuccess?.queue_number, orderSuccess?.estimated_minutes, orderSuccess?.status]);
+
   const fetchTableData = async () => {
     try {
       const res = await tablesAPI.getByQrCode(qrCode);
@@ -98,21 +113,6 @@ const Menu = () => {
 
   if (loading) return (<div className="min-h-screen flex items-center justify-center" style={{ background: loadingBg }}><div className="text-center"><div className="relative w-16 h-16 mx-auto"><div className="absolute inset-0 rounded-full border-4" style={{ borderColor: theme.primaryColor + "40" }} /><div className="absolute inset-0 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: theme.primaryColor, borderTopColor: "transparent" }} /></div><p className="mt-6 font-medium" style={{ color: theme.textColor }}>메뉴를 불러오는 중...</p></div></div>);
   if (error) return (<div className="min-h-screen flex items-center justify-center" style={{ background: theme.backgroundColor }}><p className="text-red-500 text-xl">{error}</p></div>);
-
-  // Poll for order updates
-  useEffect(() => {
-    if (!orderSuccess?.id) return;
-    const pollOrder = async () => {
-      try {
-        const res = await ordersAPI.getById(orderSuccess.id);
-        if (res.data.queue_number !== orderSuccess.queue_number || res.data.estimated_minutes !== orderSuccess.estimated_minutes || res.data.status !== orderSuccess.status) {
-          setOrderSuccess(prev => ({ ...prev, ...res.data }));
-        }
-      } catch (e) {}
-    };
-    const interval = setInterval(pollOrder, 5000);
-    return () => clearInterval(interval);
-  }, [orderSuccess?.id, orderSuccess?.queue_number, orderSuccess?.estimated_minutes, orderSuccess?.status]);
 
   if (orderSuccess) {
     const pInfo = paymentMethods.find(p => p.id === orderSuccess.payment_method);
