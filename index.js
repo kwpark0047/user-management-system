@@ -34,7 +34,7 @@ app.use(cors(corsOptions));
 // Socket.io 설정
 const io = new Server(httpServer, {
   cors: {
-    origin: ['http://localhost:3002', 'http://localhost:5173', 'http://localhost:5174'],
+    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3002', 'http://localhost:5173', 'http://localhost:5174', 'https://frontend-gamma-ten-89.vercel.app'],
     credentials: true
   }
 });
@@ -81,6 +81,9 @@ app.use(express.json());
 
 // 정적 파일 제공
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Health check
+app.get("/api/health", (req, res) => res.json({ status: "ok", timestamp: new Date().toISOString() }));
 
 // API 라우트
 app.use('/api/auth', authRouter);
