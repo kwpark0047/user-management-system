@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { tablesAPI, storesAPI } from '../../api';
 import { ArrowLeft, Plus, Edit, Trash2, QrCode, RefreshCw, Download, FileText, Loader2 } from 'lucide-react';
-import { jsPDF } from 'jspdf';
+
 
 const TableManager = () => {
   const { storeId } = useParams();
@@ -54,6 +54,7 @@ const TableManager = () => {
     if (tables.length === 0) { alert('출력할 테이블이 없습니다'); return; }
     setPdfLoading(true);
     try {
+      const { jsPDF } = await import("jspdf");
       const doc = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210, pageHeight = 297, margin = 15, qrSize = 60;
       const cellWidth = (pageWidth - margin * 2) / 2, cellHeight = 90, qrsPerPage = 6;
