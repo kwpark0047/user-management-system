@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { MapPin, Navigation, ZoomIn, ZoomOut } from 'lucide-react';
 
 const KakaoMap = ({ stores, onStoreSelect, selectedStore }) => {
@@ -8,32 +9,7 @@ const KakaoMap = ({ stores, onStoreSelect, selectedStore }) => {
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (window.kakao && window.kakao.maps) {
-      initializeMap();
-    } else {
-      setError('카카오맵 SDK가 로드되지 않았습니다. API 키를 확인해주세요.');
-    }
-    return () => {
-      markersRef.current.forEach(marker => marker.setMap(null));
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isMapLoaded && stores.length > 0) {
-      updateMarkers();
-    }
-  }, [stores, isMapLoaded]);
-
-  useEffect(() => {
-    if (selectedStore && mapInstanceRef.current) {
-      const position = new window.kakao.maps.LatLng(selectedStore.lat, selectedStore.lng);
-      mapInstanceRef.current.setCenter(position);
-      mapInstanceRef.current.setLevel(3);
-    }
-  }, [selectedStore]);
-
-  const initializeMap = () => {
+  const initializeMap = useCallback(() => {
     try {
       const container = mapRef.current;
       const options = {
@@ -45,12 +21,12 @@ const KakaoMap = ({ stores, onStoreSelect, selectedStore }) => {
       const zoomControl = new window.kakao.maps.ZoomControl();
       map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
       setIsMapLoaded(true);
-    } catch (err) {
+    } catch {
       setError('지도를 초기화하는 중 오류가 발생했습니다.');
     }
-  };
+  }, []);
 
-  const updateMarkers = () => {
+  const updateMarkers = useCallback(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
@@ -104,7 +80,32 @@ const KakaoMap = ({ stores, onStoreSelect, selectedStore }) => {
     if (stores.length > 0) {
       map.setBounds(bounds);
     }
-  };
+  }, [stores, onStoreSelect]);
+
+  useEffect(() => {
+    if (window.kakao && window.kakao.maps) {
+      initializeMap();
+    } else {
+      setError('카카오맵 SDK가 로드되지 않았습니다. API 키를 확인해주세요.');
+    }
+    return () => {
+      markersRef.current.forEach(marker => marker.setMap(null));
+    };
+  }, [initializeMap]);
+
+  useEffect(() => {
+    if (isMapLoaded && stores.length > 0) {
+      updateMarkers();
+    }
+  }, [stores, isMapLoaded, updateMarkers]);
+
+  useEffect(() => {
+    if (selectedStore && mapInstanceRef.current) {
+      const position = new window.kakao.maps.LatLng(selectedStore.lat, selectedStore.lng);
+      mapInstanceRef.current.setCenter(position);
+      mapInstanceRef.current.setLevel(3);
+    }
+  }, [selectedStore]);
 
   const handleZoomIn = () => {
     if (mapInstanceRef.current) {
@@ -156,7 +157,7 @@ const KakaoMap = ({ stores, onStoreSelect, selectedStore }) => {
   return (
     <div className="relative h-full">
       <div ref={mapRef} className="w-full h-full rounded-2xl" />
-      
+
       <div className="absolute top-4 right-4 flex flex-col gap-2">
         <button onClick={handleMyLocation} className="w-10 h-10 bg-white rounded-xl shadow-card flex items-center justify-center hover:bg-gray-50 transition-colors" title="내 위치">
           <Navigation className="w-5 h-5 text-primary-600" />

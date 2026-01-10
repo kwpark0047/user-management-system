@@ -15,6 +15,7 @@ const TableManager = () => {
   const [showQrModal, setShowQrModal] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, [storeId]);
 
   const fetchData = async () => {
@@ -80,7 +81,7 @@ const TableManager = () => {
           canvas.width = img.width; canvas.height = img.height;
           canvas.getContext('2d').drawImage(img, 0, 0);
           doc.addImage(canvas.toDataURL('image/png'), 'PNG', x + (cellWidth - qrSize) / 2, y + 8, qrSize, qrSize);
-        } catch (err) {
+        } catch {
           doc.setTextColor(255, 0, 0);
           doc.setFontSize(10);
           doc.text('QR 오류', x + cellWidth / 2, y + 40, { align: 'center' });
@@ -100,7 +101,7 @@ const TableManager = () => {
         doc.text('Page ' + i + ' / ' + totalPages, pageWidth / 2, pageHeight - 10, { align: 'center' });
       }
       doc.save((store?.name || 'tables') + '_QR_codes.pdf');
-    } catch (error) { alert('PDF 생성에 실패했습니다'); }
+    } catch { alert('PDF 생성에 실패했습니다'); }
     finally { setPdfLoading(false); }
   };
 
@@ -170,7 +171,7 @@ const TableModal = ({ storeId, table, onClose, onSave }) => {
       if (table) await tablesAPI.update(table.id, form);
       else await tablesAPI.create({ store_id: parseInt(storeId), ...form });
       onSave();
-    } catch (error) { alert(error.response?.data?.error || "저장 실패"); }
+    } catch (err) { alert(err.response?.data?.error || "저장 실패"); }
     finally { setLoading(false); }
   };
   return (

@@ -74,8 +74,8 @@ const OrderManager = () => {
     try {
       const res = await storesAPI.getById(storeId);
       setStore(res.data);
-    } catch (error) {
-      console.error('매장 로딩 실패:', error);
+    } catch {
+      console.error('매장 로딩 실패');
     }
   }, [storeId]);
 
@@ -87,7 +87,7 @@ const OrderManager = () => {
 
       // 새로운 대기 주문 감지
       if (!isFirstLoadRef.current && soundEnabled) {
-        const currentOrderIds = new Set(newOrders.map(o => o.id));
+        // Order IDs tracked via prevOrderIdsRef
         const newPendingOrders = newOrders.filter(order =>
           order.status === 'pending' && !prevOrderIdsRef.current.has(order.id)
         );
@@ -104,8 +104,8 @@ const OrderManager = () => {
       isFirstLoadRef.current = false;
 
       setOrders(newOrders);
-    } catch (error) {
-      console.error('주문 로딩 실패:', error);
+    } catch {
+      console.error('주문 로딩 실패');
     } finally {
       setLoading(false);
     }
@@ -155,12 +155,12 @@ const OrderManager = () => {
       if (selectedOrder?.id === orderId) {
         setSelectedOrder(prev => ({ ...prev, status: newStatus }));
       }
-    } catch (error) {
+    } catch {
       alert('상태 변경에 실패했습니다.');
     }
   };
 
-  const handleQueueUpdate = async (orderId) => {
+  const _handleQueueUpdate = async (orderId) => {
     try {
       await ordersAPI.updateQueue(orderId, parseInt(queueEdit.queue_number) || null, parseInt(queueEdit.estimated_minutes) || null);
       if (soundEnabled) notificationSound.playSuccess();
@@ -169,7 +169,7 @@ const OrderManager = () => {
         setSelectedOrder(prev => ({ ...prev, queue_number: parseInt(queueEdit.queue_number) || null, estimated_minutes: parseInt(queueEdit.estimated_minutes) || null }));
       }
       alert('대기순번이 저장되었습니다.');
-    } catch (error) {
+    } catch {
       alert('저장에 실패했습니다.');
     }
   };

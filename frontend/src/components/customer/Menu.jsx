@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { storesAPI, categoriesAPI, productsAPI, tablesAPI, ordersAPI } from "../../api";
@@ -34,14 +35,14 @@ const Menu = () => {
   const [orderForm, setOrderForm] = useState({ customer_name: "", customer_phone: "", notes: "", payment_method: "card" });
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [orderStep, setOrderStep] = useState("cart");
-  const [orderPolling, setOrderPolling] = useState(false);
+  // Order polling state removed - unused
 
   const theme = useMemo(() => {
     if (!store?.theme) return defaultTheme;
     try {
       const parsed = typeof store.theme === "string" ? JSON.parse(store.theme) : store.theme;
       return { ...defaultTheme, ...parsed };
-    } catch (e) { return defaultTheme; }
+    } catch { return defaultTheme; }
   }, [store]);
 
   useEffect(() => {
@@ -58,7 +59,7 @@ const Menu = () => {
         if (res.data.queue_number !== orderSuccess.queue_number || res.data.estimated_minutes !== orderSuccess.estimated_minutes || res.data.status !== orderSuccess.status) {
           setOrderSuccess(prev => ({ ...prev, ...res.data }));
         }
-      } catch (e) {}
+      } catch { /* ignore polling errors */ }
     };
     const interval = setInterval(pollOrder, 5000);
     return () => clearInterval(interval);

@@ -44,8 +44,9 @@ function sendOrderReadyNotification(io, order, tableAssignment) {
  * 새 주문 알림 발송 (주방/직원용)
  * @param {Object} io - Socket.io 인스턴스
  * @param {Object} order - 주문 정보
+ * @param {Object} tableAssignment - 테이블 담당자 정보 (optional)
  */
-function sendNewOrderNotification(io, order) {
+function sendNewOrderNotification(io, order, tableAssignment) {
   const notification = {
     type: 'NEW_ORDER',
     orderId: order.id,
@@ -54,17 +55,34 @@ function sendNewOrderNotification(io, order) {
     tableName: order.table_name,
     storeId: order.store_id,
     totalAmount: order.total_amount,
+    estimatedMinutes: order.estimated_minutes,
     message: `새 주문이 접수되었습니다! (${order.table_name || '포장'})`,
     timestamp: new Date().toISOString()
   };
 
-  // 매장 전체 직원에게 전송
+  // 1. 매장 전체 직원에게 전송
   io.to(`store-${order.store_id}`).emit('notification', {
     ...notification,
     target: 'store'
   });
 
-  console.log(`[Notification] New order #${order.id} - sent to store ${order.store_id}`);
+  // 2. 주방 전용 알림
+  io.to(`kitchen-${order.store_id}`).emit('notification', {
+    ...notification,
+    target: 'kitchen'
+  });
+
+  // 3. 테이블 담당 직원에게 전송
+  if (tableAssignment?.staff_user_id) {
+    io.to(`user-${tableAssignment.staff_user_id}`).emit('notification', {
+      ...notification,
+      target: 'table_staff',
+      staffName: tableAssignment.staff_name
+    });
+    console.log(`[Notification] New order #${order.id} - sent to table staff ${tableAssignment.staff_user_id}`);
+  }
+
+  console.log(`[Notification] New order #${order.id} - sent to store ${order.store_id} and kitchen`);
 }
 
 /**
@@ -105,8 +123,38 @@ function sendOrderStatusNotification(io, order, oldStatus, newStatus) {
   console.log(`[Notification] Order #${order.id} status: ${oldStatus} -> ${newStatus}`);
 }
 
+/**
+ * 주문 접수 알림 (주방 → 고객)
+ * @param {Object} io - Socket.io 인스턴스
+ * @param {Object} order - 주문 정보
+ */
+function sendOrderConfirmedNotification(io, order) {
+  const notification = {
+    type: 'ORDER_CONFIRMED',
+    orderId: order.id,
+    orderNumber: order.order_number,
+    tableId: order.table_id,
+    storeId: order.store_id,
+    estimatedMinutes: order.estimated_minutes,
+    queueNumber: order.queue_number,
+    message: order.estimated_minutes
+      ? `주문이 접수되었습니다! 예상 조리시간: 약 ${order.estimated_minutes}분`
+      : '주문이 접수되었습니다!',
+    timestamp: new Date().toISOString()
+  };
+
+  // 고객에게 전송
+  io.to(`order-${order.id}`).emit('notification', {
+    ...notification,
+    target: 'customer'
+  });
+
+  console.log(`[Notification] Order #${order.id} confirmed - sent to customer (estimated: ${order.estimated_minutes}min)`);
+}
+
 module.exports = {
   sendOrderReadyNotification,
   sendNewOrderNotification,
-  sendOrderStatusNotification
+  sendOrderStatusNotification,
+  sendOrderConfirmedNotification
 };

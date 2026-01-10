@@ -7,7 +7,7 @@ const OrderLog = require('../models/OrderLog');
 const TableAssignment = require('../models/TableAssignment');
 const authMiddleware = require('../middleware/auth');
 const { checkStorePermission, getStoreRole } = require('../middleware/storeAuth');
-const { sendOrderReadyNotification, sendNewOrderNotification, sendOrderStatusNotification } = require('../utils/notifications');
+const { sendOrderReadyNotification, sendNewOrderNotification, sendOrderStatusNotification, sendOrderConfirmedNotification } = require('../utils/notifications');
 
 // 매장별 주문 조회 (order:read 권한)
 router.get('/store/:storeId', authMiddleware, checkStorePermission('order:read'), (req, res) => {

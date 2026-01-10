@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { storesAPI } from '../api';
 import { Search, MapPin, Grid3X3, List, Map, Store, ChevronDown, X, Coffee, Utensils, ShoppingBag, Cake, Pizza, Star } from 'lucide-react';
 import KakaoMap from './KakaoMap';
 
@@ -40,42 +40,39 @@ const demoStores = [
 ];
 
 const StoreSearch = () => {
-  const [stores, setStores] = useState(demoStores);
   const [filteredStores, setFilteredStores] = useState(demoStores);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
-  const [showFilters, setShowFilters] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
 
-  useEffect(() => {
-    filterStores();
-  }, [searchTerm, selectedRegion, selectedType]);
-
-  const filterStores = () => {
+  const filterStores = useCallback(() => {
     let result = [...demoStores];
-    
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(store => 
+      result = result.filter(store =>
         store.name.toLowerCase().includes(term) ||
         store.address.toLowerCase().includes(term) ||
         store.popular_menu.toLowerCase().includes(term)
       );
     }
-    
+
     if (selectedRegion !== 'all') {
       result = result.filter(store => store.region === selectedRegion);
     }
-    
+
     if (selectedType !== 'all') {
       result = result.filter(store => store.business_type === selectedType);
     }
-    
+
     setFilteredStores(result);
-  };
+  }, [searchTerm, selectedRegion, selectedType]);
+
+  useEffect(() => {
+    filterStores();
+  }, [filterStores]);
 
   const getTypeIcon = (type) => {
     const found = businessTypes.find(t => t.id === type);
@@ -85,11 +82,6 @@ const StoreSearch = () => {
   const getTypeName = (type) => {
     const found = businessTypes.find(t => t.id === type);
     return found ? found.name : '기타';
-  };
-
-  const getRegionName = (region) => {
-    const found = regions.find(r => r.id === region);
-    return found ? found.name : region;
   };
 
   const clearFilters = () => {

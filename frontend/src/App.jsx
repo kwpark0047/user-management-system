@@ -19,6 +19,9 @@ import SalesStats from './components/admin/SalesStats';
 import StaffManager from './components/admin/StaffManager';
 import AnalyticsDashboard from './components/admin/AnalyticsDashboard';
 
+// Kitchen
+import KitchenDisplay from './components/kitchen/KitchenDisplay';
+
 // Customer
 import Menu from './components/customer/Menu';
 import MenuDemo from './components/customer/MenuDemo';
@@ -57,6 +60,9 @@ function App() {
           <Route path="/admin/stores/:storeId/stats" element={<AdminLayout><SalesStats /></AdminLayout>} />
           <Route path="/admin/stores/:storeId/staff" element={<AdminLayout><StaffManager /></AdminLayout>} />
           <Route path="/admin/stores/:storeId/analytics" element={<AdminLayout><AnalyticsDashboard /></AdminLayout>} />
+
+          {/* 주방 페이지 */}
+          <Route path="/kitchen/:storeId" element={<KitchenDisplay />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -27,18 +27,20 @@ const SalesStats = () => {
       case 'today':
         startDate = endDate = today.toISOString().split('T')[0];
         break;
-      case 'week':
+      case 'week': {
         endDate = today.toISOString().split('T')[0];
         const weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 6);
         startDate = weekAgo.toISOString().split('T')[0];
         break;
-      case 'month':
+      }
+      case 'month': {
         endDate = today.toISOString().split('T')[0];
         const monthAgo = new Date(today);
         monthAgo.setDate(monthAgo.getDate() - 29);
         startDate = monthAgo.toISOString().split('T')[0];
         break;
+      }
       case 'custom':
         startDate = customStartDate;
         endDate = customEndDate;

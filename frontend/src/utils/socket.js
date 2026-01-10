@@ -43,4 +43,15 @@ export const onDisconnect = (callback) => {
 // 연결 상태 확인
 export const isConnected = () => socket.connected;
 
+// 소켓 인스턴스 반환
+export const getSocket = () => socket;
+
+// 주방 소켓 연결
+export const connectKitchen = (storeId, userId) => {
+  if (!socket.connected) {
+    socket.connect();
+  }
+  socket.emit('join-kitchen', { storeId, userId });
+};
+
 export default socket;

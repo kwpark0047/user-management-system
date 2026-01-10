@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { connectSocket, disconnectSocket, onNotification, onConnect, onDisconnect } from '../utils/socket';
 import notificationSound, { vibrateOrderReady, vibrateShort } from '../utils/notificationSound';

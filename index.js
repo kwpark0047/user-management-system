@@ -58,6 +58,15 @@ io.on('connection', (socket) => {
     console.log(`[Socket] ${socket.id} joined store-${storeId} (user: ${userId}, role: ${role})`);
   });
 
+  // 주방: 주방 전용 룸 조인
+  socket.on('join-kitchen', ({ storeId, userId }) => {
+    socket.join(`kitchen-${storeId}`);
+    if (userId) {
+      socket.join(`user-${userId}`);
+    }
+    console.log(`[Socket] ${socket.id} joined kitchen-${storeId} (user: ${userId})`);
+  });
+
   // 연결 해제
   socket.on('disconnect', () => {
     console.log(`[Socket] Client disconnected: ${socket.id}`);
