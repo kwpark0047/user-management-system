@@ -18,8 +18,7 @@ export default defineConfig({
           'vendor-icons': ['lucide-react'],
           // 유틸리티
           'vendor-utils': ['axios', 'socket.io-client'],
-          // PDF 생성
-          'vendor-pdf': ['jspdf'],
+          // jsPDF는 동적 import로 로드되므로 manualChunks에서 제외
         }
       }
     },
